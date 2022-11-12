@@ -1,3 +1,6 @@
+import dotenv from "dotenv"
+dotenv.config()
+
 import {
   Organisations,
   Roles,
@@ -8,8 +11,11 @@ import {
   TaskState,
   TaskType,
   Tasks,
+  KnowledgeBase,
 } from "../database/dbConnector.js";
 import { ObjectId } from "mongodb";
+import { hashSync, compareSync } from "bcrypt";
+
 
 export const resolvers = {
   Query: {
@@ -48,6 +54,34 @@ export const resolvers = {
         return new Error(err);
       }
     },
+    getAllType: async () => {
+      try {
+        return await TaskType.find();
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getAllState: async () => {
+      try {
+        return await TaskState.find();
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getAllComments: async () => {
+      try {
+        return await TaskComments.find();
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getAllKnowledgeBase: async () => {
+      try {
+        return await KnowledgeBase.find();
+      } catch (err) {
+        return new Error(err);
+      }
+    },
   },
   Mutation: {
     getOrganisation: async (_, { orgId }) => {
@@ -69,7 +103,10 @@ export const resolvers = {
     },
     updateOrganisation: async (_, { updateData, orgId }) => {
       try {
-        await Organisations.updateOne({ _id: ObjectId(orgId) }, updateData);
+        await Organisations.findOneAndUpdate(
+          { _id: ObjectId(orgId) },
+          updateData
+        );
 
         const newOrg = await Organisations.findOne({ _id: ObjectId(orgId) });
 
@@ -150,7 +187,11 @@ export const resolvers = {
     },
     addUsers: async (_, { user }) => {
       try {
-        const newUser = new User(user);
+        let salt = 10
+        let hashPassword = hashSync((user.hashed_password).toString(), salt);
+        let HashUser = user
+        HashUser.hashed_password = hashPassword
+        const newUser = new User(HashUser);
 
         await newUser.save();
 
@@ -283,22 +324,243 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    updateTask: async (_, { taskId, newTaskData }) => {},
+    updateTask: async (_, { taskId, newTaskData }) => {
+      try {
+        await Tasks.findOneAndUpdate({ _id: ObjectId(taskId) }, newTaskData);
+        const newTask = await Tasks.findOne({ _id: ObjectId(taskId) });
+        return newTask;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
     deleteTask: async (_, { taskId }) => {
       try {
-        await Tasks.deleteOne({ _id: ObjectId(tassId) });
+        await Tasks.deleteOne({ _id: ObjectId(taskId) });
 
         return "Task deleted";
       } catch (err) {
         return new Error(err);
       }
     },
-    addParamsToTask: async (_, { taskId, paramsData, taskFile }) => {
+    addParamsToTask: async (_, { taskId, paramsData }) => {
       try {
-        const newParams = paramsData
-        const task = await Tasks.findOneAndUpdate({_id: ObjectId(taskId)}, {$set: {files: taskFile}})
+        let params = paramsData;
+        await Tasks.findOneAndUpdate({ _id: ObjectId(taskId) }, params);
+        const task = await Tasks.findOne({ _id: ObjectId(taskId) });
+        return task;
       } catch (err) {
-        return new Error(err)
+        return new Error(err);
+      }
+    },
+    updateParamsToTask: async (_, { taskId, newParamsData }) => {
+      try {
+        let newParams = newParamsData;
+        await Tasks.findOneAndUpdate({ _id: ObjectId(taskId) }, newParams);
+        const task = await Tasks.findOne({ _id: ObjectId(taskId) });
+        return task;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    addFileToTask: async (_, { taskId, fileData }) => {
+      try {
+        const taskFile = await Tasks.findOne({ _id: ObjectId(taskId) });
+        let file = [];
+
+        taskFile.files.forEach((item) => {
+          file.push(item);
+        });
+
+        file.push(fileData);
+
+        await Tasks.findOneAndUpdate(
+          { _id: taskId },
+          { $set: { files: file } }
+        );
+        const task = await Tasks.findOne({ _id: ObjectId(taskId) });
+        console.log(task);
+        return task;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getState: async (_, { stateId }) => {
+      try {
+        return await TaskState.findOne({ _id: ObjectId(stateId) });
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    addStateToTask: async (_, { taskId, stateData }) => {
+      try {
+        const state = new TaskState(stateData);
+        await state.save();
+        console.log(state._id);
+        await Tasks.findOneAndUpdate(
+          { _id: ObjectId(taskId) },
+          { $set: { state_id: state._id } }
+        );
+        const task = await Tasks.findOne({ _id: taskId });
+        return task;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    addState: async (_, { stateData }) => {
+      try {
+        const state = new TaskState(stateData);
+        await state.save();
+
+        return state;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    updateStateToTask: async (_, { stateId, taskId, newStateData }) => {
+      try {
+        const stateTask = await TaskState.findOneAndUpdate(
+          { _id: ObjectId(stateId) },
+          newStateData
+        );
+        console.log(stateTask._id);
+        await Tasks.findOneAndUpdate(
+          { _id: ObjectId(taskId) },
+          { $set: { state_id: stateTask._id } }
+        );
+        const task = await Tasks.findOne({ _id: ObjectId(taskId) });
+        console.log(task);
+        return task;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getType: async (_, { typeId }) => {
+      try {
+        return await TaskType.findOne({ _id: ObjectId(typeId) });
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    addTypeToTask: async (_, { taskId, typeData }) => {
+      try {
+        const type = new TaskType(typeData);
+        await type.save();
+
+        await Tasks.findOneAndUpdate(
+          { _id: ObjectId(taskId) },
+          { $set: { task_type_id: type._id } }
+        );
+
+        const task = await Tasks.findOne({ _id: ObjectId(taskId) });
+        return task;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    addType: async (_, { typeData }) => {
+      try {
+        const newType = TaskType(typeData);
+        await newType.save();
+
+        return newType;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    updateTypeToTask: async (_, { taskId, typeId, newTypeData }) => {
+      try {
+        const newType = await TaskType.findOneAndUpdate(
+          { _id: ObjectId(typeId) },
+          newTypeData
+        );
+
+        await Tasks.findOneAndUpdate(
+          { _id: ObjectId(taskId) },
+          { $set: { task_type_id: newType._id } }
+        );
+
+        const task = await Tasks.findOne({ _id: ObjectId(taskId) });
+        return task;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getComment: async (_, { commentId }) => {
+      try {
+        return await TaskComments.findOne({ _id: ObjectId(commentId) });
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    addCommentsToTask: async (_, { commentsData }) => {
+      try {
+        const newComment = new TaskComments(commentsData);
+        await newComment.save();
+
+        return newComment;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    deleteCommentsToTask: async (_, { commentsId }) => {
+      try {
+        await TaskComments.deleteOne({ _id: ObjectId(commentsId) });
+
+        return "Comments deleted";
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getKnowledgeBase: async (_, { knowledgeBaseId }) => {
+      try {
+        return await KnowledgeBase.findOne({ _id: ObjectId(knowledgeBaseId) });
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    addKnowledgeBase: async (_, { knowledgeBaseData }) => {
+      try {
+        const base = new KnowledgeBase(knowledgeBaseData);
+        base.save();
+
+        return base;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    deleteKnowledgeBase: async (_, { knowledgeBaseId }) => {
+      try {
+        await KnowledgeBase.deleteOne({ _id: ObjectId(knowledgeBaseId) });
+
+        return "KnowledgeBase deleted";
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    addFileToKnowledgeBase: async (
+      _,
+      { knowledgeBaseId, KnowledgeBaseFileData }
+    ) => {
+      try {
+        const baseFile = await KnowledgeBase.findOne({
+          _id: ObjectId(knowledgeBaseId),
+        });
+        let file = [];
+
+        baseFile.files.forEach((item) => {
+          file.push(item);
+        });
+
+        file.push(KnowledgeBaseFileData);
+
+        await KnowledgeBase.findOneAndUpdate(
+          { _id: knowledgeBaseId },
+          { $set: { files: file } }
+        );
+        const base = await Tasks.findOne({ _id: ObjectId(knowledgeBaseId) });
+        return base;
+      } catch (err) {
+        return new Error(err);
       }
     },
   },

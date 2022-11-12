@@ -5,6 +5,7 @@ import { UsersSchema } from '../models/Users.js'
 import { UserRolesSchema } from '../models/User_Roles.js'
 import { ContactsSchema } from '../models/Contacts.js'
 import { TaskCommentsSchema, TaskStateSchema, TaskTypeSchema, TasksSchema } from '../models/Tasks.js'
+import { KnowledgeBaseSchema } from '../models/Knowledge_base.js'
 import { DB_URL } from '../config/config.js'
 
 mongoose.connect(DB_URL)
@@ -23,4 +24,5 @@ const TaskComments = mongoose.model("task_comments", TaskCommentsSchema)
 const TaskState = mongoose.model("task_state", TaskStateSchema)
 const TaskType = mongoose.model("task_types", TaskTypeSchema)
 const Tasks = mongoose.model("tasks", TasksSchema)
-export { Organisations, Roles, User, UserRoles, Contacts, TaskComments, TaskState, TaskType, Tasks}
+const KnowledgeBase = mongoose.model("knowledge_base", KnowledgeBaseSchema)
+export { Organisations, Roles, User, UserRoles, Contacts, TaskComments, TaskState, TaskType, Tasks, KnowledgeBase}

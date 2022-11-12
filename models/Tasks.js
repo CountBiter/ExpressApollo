@@ -24,15 +24,15 @@ export const TaskCommentsSchema = new Schema({
 });
 
 export const TasksSchema = new Schema({
-  task_type_id: {type: Schema.Types.ObjectId, ref: "tasks"},
+  task_type_id: { type: Schema.Types.ObjectId, ref: "task_types" },
   title: String,
   description: String,
   create_date: String,
   acceptence_date: String,
   finished_date: String,
   author_id: String,
-  implementer_id: String,
-  state_id: String,
+  implementer_id: [String],
+  state_id: { type: Schema.Types.ObjectId, ref: "task_state" },
   priority: String,
   mata_tags: [String],
   files: [TaskFileSchema],

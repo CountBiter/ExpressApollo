@@ -11,6 +11,7 @@ export const typeDefs = gql`
     oked: String
   }
   type RoleTaskPermmission {
+    _id: ID!
     title: Boolean
     description: Boolean
     implementer: Boolean
@@ -36,12 +37,17 @@ export const typeDefs = gql`
     post: String
     depaptament: String
     organisation_id: ID
+    login: String
+    hashed_password: String
+    telegram_chat_id: String
   }
   type UserRole {
+    _id: ID!
     user_id: ID!
     role_id: ID!
   }
   type TypeCI {
+    _id: ID!
     title: String
     icon: String
   }
@@ -51,14 +57,16 @@ export const typeDefs = gql`
     type_ci: TypeCI
   }
   type TaskFile {
+    _id: ID!
     name: String
     author_id: String
     create_date: String
     file_url: String
   }
   type Tasks {
+    _id: ID!
     task_type_id: String
-    title: String,
+    title: String
     description: String
     create_date: String
     acceptence_date: String
@@ -71,19 +79,48 @@ export const typeDefs = gql`
     files: [TaskFile]
   }
   type TaskState {
+    _id: ID!
     title: String
     sla: Int
   }
   type TaskType {
-    title: String,
-    sla: Int,
+    _id: ID!
+    title: String
+    sla: Int
+  }
+  type Comments {
+    _id: ID!
+    comments: String
+    task_id: String
+    author_id: String
+  }
+  type KnowledgeBaseFiles {
+    _id: ID!
+    name: String
+    author_id: String
+    create_date: String
+    file_url: String
+  }
+  type KnowledgeBase {
+    _id: ID!
+    title: String
+    task_id: String
+    author_id: String
+    create_date: String
+    description: String
+    files: [KnowledgeBaseFiles]
   }
   type Query {
     getAllOrganisations: [Organisations]
     getAllUsers: [Users]
     getAllRoles: [Roles]
     getAllContacts: [Contact]
+    getContact: Contact
     getAllTasks: [Tasks]
+    getAllType: [TaskType]
+    getAllState: [TaskState]
+    getAllComments: [Comments]
+    getAllKnowledgeBase: [KnowledgeBase]
   }
   input inputOrganisation {
     title: String
@@ -119,6 +156,9 @@ export const typeDefs = gql`
     post: String
     depaptament: String
     organisation_id: ID!
+    login: String
+    hashed_password: String
+    telegram_chat_id: String
   }
   input inputUpdateRole {
     title: Boolean
@@ -157,30 +197,54 @@ export const typeDefs = gql`
     state_id: String
     priority: String
     mata_tags: [String]
-    files: [inputTaskFile]
   }
   input inputStateTask {
     title: String
     sla: Int
   }
-  input inputTypeTask { 
-    title: String,
-    sla: Int,
+  input inputTypeTask {
+    title: String
+    sla: Int
+  }
+  input inputComments {
+    comments: String
+    task_id: String
+    author_id: String
+  }
+  input inputKnowledgeBaseFiles {
+    name: String
+    author_id: String
+    create_date: String
+    file_url: String
+  }
+  input inputKnowledgeBase {
+    title: String
+    task_id: String
+    author_id: String
+    create_date: String
+    description: String
   }
   type Mutation {
     getOrganisation(orgId: String): Organisations
     addOrganisation(org: inputOrganisation): Organisations
-    updateOrganisation(updateData: inputOrganisation, orgId: String): Organisations
+    updateOrganisation(
+      updateData: inputOrganisation
+      orgId: String
+    ): Organisations
     deleteOrganisation(id: String): String
     getRole(roleId: String): Roles
     addRoles(roles: inputRoles, rolesTasks: inputRoleTaskPermmission): Roles
-    updateRoles(roleId: String, updateData: inputRoles, updateDataTask: inputRoleTaskPermmission): Roles
+    updateRoles(
+      roleId: String
+      updateData: inputRoles
+      updateDataTask: inputRoleTaskPermmission
+    ): Roles
     deleteRoles(roleId: String): String
-    getUser(userId: String): Users 
+    getUser(userId: String): Users
     addUsers(user: inputUsers): Users
     updateUser(userId: String, updateData: inputUsers): Users
     deleteUser(userId: String): String
-    getUserRole(userRoleId: String): UserRole  
+    getUserRole(userRoleId: String): UserRole
     addUserRoles(roleId: String, userId: String): UserRole
     updateUserRoles(updateData: inputUpdateRole, oldIdRole: String): Roles
     getUserContact(userId: String): [Contact]
@@ -189,10 +253,36 @@ export const typeDefs = gql`
     deleteContasts(contactId: String): String
     getTask(taskId: String): Tasks
     addTask(taskData: inputTask): Tasks
-    updateTask(taskId: String, newTaskData) Task
+    updateTask(taskId: String, newTaskData: inputTask): Tasks
     deleteTask(taskId: String): String
-    addParamsToTask(taskId: String, paramsData: inputParams, taskFile: inputTaskFile): Tasks
-    addStateToTask(stateData: inputStateTask): TaskState
-    addTypeToTask(typeData: inputTypeTask)
+    addParamsToTask(taskId: String, paramsData: inputParams): Tasks
+    updateParamsToTask(taskId: String, newParamsData: inputParams): Tasks
+    addFileToTask(taskId: String, fileData: inputTaskFile): Tasks
+    getState(stateId: String): TaskState
+    addStateToTask(taskId: String, stateData: inputStateTask): Tasks
+    addState(stateData: inputStateTask): TaskState
+    updateStateToTask(
+      stateId: String
+      taskId: String
+      newStateData: inputStateTask
+    ): Tasks
+    getType(typeId: String): TaskType
+    addTypeToTask(taskId: String, typeData: inputTypeTask): Tasks
+    addType(typeData: inputTypeTask): TaskType
+    updateTypeToTask(
+      taskId: String
+      typeId: String
+      newTypeData: inputTypeTask
+    ): Tasks
+    getComment(commentId: String): Comments
+    addCommentsToTask(taskId: String, commentsData: inputComments): Comments
+    deleteCommentsToTask(commentsId: String): String
+    getKnowledgeBase(knowledgeBaseId: String): KnowledgeBase
+    addKnowledgeBase(knowledgeBaseData: inputKnowledgeBase): KnowledgeBase
+    deleteKnowledgeBase(knowledgeBaseId: String): String
+    addFileToKnowledgeBase(
+      knowledgeBaseId: String
+      KnowledgeBaseFileData: inputKnowledgeBaseFiles
+    ): KnowledgeBase
   }
 `;
