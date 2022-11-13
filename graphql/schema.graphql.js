@@ -72,7 +72,7 @@ export const typeDefs = gql`
     acceptence_date: String
     finished_date: String
     author_id: String
-    implementer_id: String
+    implementer_id: [String]
     state_id: String
     priority: String
     mata_tags: [String]
@@ -111,7 +111,7 @@ export const typeDefs = gql`
     files: [KnowledgeBaseFiles]
   }
   type Query {
-    getAllOrganisations: [Organisations]
+    getAllOrganisations(page: Int): [Organisations]
     getAllUsers: [Users]
     getAllRoles: [Roles]
     getAllContacts: [Contact]
@@ -181,22 +181,18 @@ export const typeDefs = gql`
     title: String
     description: String
     create_date: String
-    author_id: String
-  }
-  input inputTaskFile {
-    name: String
-    author_id: String
-    create_date: String
-    file_url: String
-  }
-  input inputParams {
     task_type_id: String
     acceptence_date: String
     finished_date: String
-    implementer_id: String
+    implementer_id: [String]
     state_id: String
     priority: String
     mata_tags: [String]
+  }
+  input inputTaskFile {
+    name: String
+    create_date: String
+    file_url: String
   }
   input inputStateTask {
     title: String
@@ -209,18 +205,15 @@ export const typeDefs = gql`
   input inputComments {
     comments: String
     task_id: String
-    author_id: String
   }
   input inputKnowledgeBaseFiles {
     name: String
-    author_id: String
     create_date: String
     file_url: String
   }
   input inputKnowledgeBase {
     title: String
     task_id: String
-    author_id: String
     create_date: String
     description: String
   }
@@ -252,12 +245,10 @@ export const typeDefs = gql`
     updateContacts(contactId: String, updateTypeCI: inputTypeCI): Contact
     deleteContasts(contactId: String): String
     getTask(taskId: String): Tasks
-    addTask(taskData: inputTask): Tasks
+    addTask(taskData: inputTask, token: String): Tasks
     updateTask(taskId: String, newTaskData: inputTask): Tasks
     deleteTask(taskId: String): String
-    addParamsToTask(taskId: String, paramsData: inputParams): Tasks
-    updateParamsToTask(taskId: String, newParamsData: inputParams): Tasks
-    addFileToTask(taskId: String, fileData: inputTaskFile): Tasks
+    addFileToTask(taskId: String, fileData: inputTaskFile, token: String): Tasks
     getState(stateId: String): TaskState
     addStateToTask(taskId: String, stateData: inputStateTask): Tasks
     addState(stateData: inputStateTask): TaskState
@@ -275,14 +266,14 @@ export const typeDefs = gql`
       newTypeData: inputTypeTask
     ): Tasks
     getComment(commentId: String): Comments
-    addCommentsToTask(taskId: String, commentsData: inputComments): Comments
+    addCommentsToTask(taskId: String, commentsData: inputComments, token: String): Comments
     deleteCommentsToTask(commentsId: String): String
     getKnowledgeBase(knowledgeBaseId: String): KnowledgeBase
-    addKnowledgeBase(knowledgeBaseData: inputKnowledgeBase): KnowledgeBase
+    addKnowledgeBase(knowledgeBaseData: inputKnowledgeBase, token: String): KnowledgeBase
     deleteKnowledgeBase(knowledgeBaseId: String): String
     addFileToKnowledgeBase(
       knowledgeBaseId: String
-      KnowledgeBaseFileData: inputKnowledgeBaseFiles
+      KnowledgeBaseFileData: inputKnowledgeBaseFiles, token: String
     ): KnowledgeBase
   }
 `;

@@ -1,5 +1,5 @@
-import dotenv from "dotenv"
-dotenv.config()
+import dotenv from "dotenv";
+dotenv.config();
 
 import {
   Organisations,
@@ -15,11 +15,11 @@ import {
 } from "../database/dbConnector.js";
 import { ObjectId } from "mongodb";
 import { hashSync, compareSync } from "bcrypt";
-
+import jwt from "jsonwebtoken";
 
 export const resolvers = {
   Query: {
-    getAllOrganisations: async () => {
+    getAllOrganisations: async (_, {page}) => {
       try {
         return await Organisations.find();
       } catch (err) {
@@ -187,10 +187,10 @@ export const resolvers = {
     },
     addUsers: async (_, { user }) => {
       try {
-        let salt = 10
-        let hashPassword = hashSync((user.hashed_password).toString(), salt);
-        let HashUser = user
-        HashUser.hashed_password = hashPassword
+        let salt = 10;
+        let hashPassword = hashSync(user.hashed_password.toString(), salt);
+        let HashUser = user;
+        HashUser.hashed_password = hashPassword;
         const newUser = new User(HashUser);
 
         await newUser.save();
@@ -314,12 +314,31 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    addTask: async (_, { taskData }) => {
+    addTask: async (_, { taskData, token }) => {
       try {
-        const newTask = new Tasks(taskData);
-        newTask.save();
+        const { user_id, role_id } = jwt.decode(token, process.env.JWT_SECRET);
+        const userRole = await Roles.findOne({ _id: ObjectId(role_id) });
+        if (
+          (userRole.permmission.files &&
+            userRole.permmission.description &&
+            userRole.permmission.title &&
+            taskData.implementer_id === null &&
+            taskData.state_id === null &&
+            taskData.priority === null) ||
+          (userRole.permmission.implementer &&
+            userRole.permmission.state &&
+            userRole.permmission.priority &&
+            taskData.implementer_id !== null &&
+            taskData.state_id !== null &&
+            taskData.priority !== null)
+        ) {
+          let task = taskData;
+          task.author_id = user_id;
+          const newTask = new Tasks(task);
+          newTask.save();
 
-        return newTask;
+          return newTask;
+        } else throw "This user can't";
       } catch (err) {
         return new Error(err);
       }
@@ -342,36 +361,19 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    addParamsToTask: async (_, { taskId, paramsData }) => {
+    addFileToTask: async (_, { taskId, fileData, token }) => {
       try {
-        let params = paramsData;
-        await Tasks.findOneAndUpdate({ _id: ObjectId(taskId) }, params);
-        const task = await Tasks.findOne({ _id: ObjectId(taskId) });
-        return task;
-      } catch (err) {
-        return new Error(err);
-      }
-    },
-    updateParamsToTask: async (_, { taskId, newParamsData }) => {
-      try {
-        let newParams = newParamsData;
-        await Tasks.findOneAndUpdate({ _id: ObjectId(taskId) }, newParams);
-        const task = await Tasks.findOne({ _id: ObjectId(taskId) });
-        return task;
-      } catch (err) {
-        return new Error(err);
-      }
-    },
-    addFileToTask: async (_, { taskId, fileData }) => {
-      try {
+        const { user_id } = jwt.decode(token, process.env.JWT_SECRET);
         const taskFile = await Tasks.findOne({ _id: ObjectId(taskId) });
+        let authorFile = fileData
+        authorFile.author_id = user_id;
         let file = [];
 
         taskFile.files.forEach((item) => {
           file.push(item);
         });
 
-        file.push(fileData);
+        file.push(authorFile);
 
         await Tasks.findOneAndUpdate(
           { _id: taskId },
@@ -492,9 +494,12 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    addCommentsToTask: async (_, { commentsData }) => {
+    addCommentsToTask: async (_, { taskId, commentsData, token }) => {
       try {
-        const newComment = new TaskComments(commentsData);
+        const { user_id } = jwt.decode(token, process.env.JWT_SECRET);
+        let comment = commentsData;
+        comment.author_id = user_id;
+        const newComment = new TaskComments(comment);
         await newComment.save();
 
         return newComment;
@@ -518,9 +523,12 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    addKnowledgeBase: async (_, { knowledgeBaseData }) => {
+    addKnowledgeBase: async (_, { knowledgeBaseData, token }) => {
       try {
-        const base = new KnowledgeBase(knowledgeBaseData);
+        const { user_id } = jwt.decode(token, process.env.JWT_SECRET);
+        let knowledge = knowledgeBaseData;
+        knowledge.author_id = user_id;
+        const base = new KnowledgeBase(knowledge);
         base.save();
 
         return base;
@@ -539,19 +547,22 @@ export const resolvers = {
     },
     addFileToKnowledgeBase: async (
       _,
-      { knowledgeBaseId, KnowledgeBaseFileData }
+      { knowledgeBaseId, KnowledgeBaseFileData, token }
     ) => {
       try {
+        const { user_id } = jwt.decode(token, process.env.JWT_SECRET)
         const baseFile = await KnowledgeBase.findOne({
           _id: ObjectId(knowledgeBaseId),
         });
+        let authorKnowLedge = KnowledgeBaseFileData
+        authorKnowLedge.author_id = user_id
         let file = [];
 
         baseFile.files.forEach((item) => {
           file.push(item);
         });
 
-        file.push(KnowledgeBaseFileData);
+        file.push(authorKnowLedge);
 
         await KnowledgeBase.findOneAndUpdate(
           { _id: knowledgeBaseId },
