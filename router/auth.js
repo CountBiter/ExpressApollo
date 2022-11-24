@@ -5,12 +5,17 @@ import { Router } from "express";
 
 import { User, UserRoles } from "../database/dbConnector.js";
 import jwt from "jsonwebtoken";
+import bodyParser from "body-parser";
 import { compareSync } from "bcrypt";
 
 const router = Router();
 
+router.use(bodyParser.json())
+router.use(bodyParser.urlencoded({ extended: false }))
+
 export const auth = router.post("/login", async (req, res) => {
   const { login, password } = req.body;
+  console.log(login, password)
   try {
     const user = await User.findOne({ login: login });
     if (user) {
@@ -18,7 +23,7 @@ export const auth = router.post("/login", async (req, res) => {
       if (userPassword) {
         const id = user._id.toString();
         const { role_id, user_id } = await UserRoles.findOne({
-          role_id: id,
+          user_id: id,
         });
         const token = jwt.sign({ role_id, user_id }, process.env.JWT_SECRET);
 
@@ -26,14 +31,15 @@ export const auth = router.post("/login", async (req, res) => {
           httpOnly: true,
         });
 
-        res.send({
+        return res.send({
           token: token,
+          refresh_token: token
         });
       }
       return res.send("Password does not match");
     }
     return res.send("This user is not found");
   } catch (err) {
-    return new Error(err);
+    res.send('ERRERR');
   }
 });

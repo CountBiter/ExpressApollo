@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <!-- <form action="/login", enctype="application/x-www-form-urlencoded" method="POST"> -->
+    <input type="text" name="login" id="a" />
+    <input type="text" name="password" id="d" />
+    <button id="login"></button>
+
+    <button id="btn">Get Tasks</button>
+    <button id="btn1">Add Tasks</button>
+    <!-- </form> -->
+    <script>
+        const a = document.querySelector("#a");
+        const d = document.querySelector("#d");
+        const btn = document.querySelector("#btn");
+        const btn1 = document.querySelector("#btn1");
+        const login = document.querySelector("#login");
+
+        login.addEventListener("click", () => {
+          fetch("/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ login: a.value, password: d.value }),
+          }).then(r => r.json()).then(data => {
+              localStorage.setItem("token", data.token)
+          });
+        });
+
+        btn.addEventListener("click", () => {
+          fetch("/graphql", {
+            method: "POST",
+            body: JSON.stringify({
+              query: `
+              { getAllTasks(page: 0)
+                  {
+                      _id
+                      task_type_id
+                      title
+                      description
+                      create_date
+                      acceptence_date
+                      finished_date
+                      author_id
+                      implementer_id
+                      state_id
+                      priority
+                      mata_tags
+                      files {
+                          _id
+                          name
+                          author_id
+                          create_date
+                          file_url
+                      }
+                  }
+              }`,
+            }),
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authentication:
+                `Bearer ${localStorage.getItem("token")}`,
+            },
+          })
+            .then((r) => r.json())
+            .then((data) => {
+              console.log(data);
+            });
+        });
+
+        btn1.addEventListener("click", () => {
+          fetch("/graphql", {
+            method: "POST",
+            body: JSON.stringify({
+              query: ` mutation{
+    addTask(taskData: {
+        description: "a",
+        title: "a",
+        create_date: "a",
+        task_type_id: null,
+        acceptence_date: null,
+        finished_date: null,
+        state_id: null,
+        implementer_id: null,
+        priority: null ,
+        mata_tags: null
+        },
+        token: "${localStorage.getItem("token")}")
+    {
+    _id
+    task_type_id
+    title
+    description
+    create_date
+    acceptence_date
+    finished_date
+    author_id
+    implementer_id
+    state_id
+    priority
+    mata_tags
+    files {
+      _id
+      name
+      author_id
+      create_date
+      file_url
+    }
+    }
+}`,
+            }),
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authentication:
+                `Bearer ${localStorage.getItem("token")}`,
+            },
+          })
+            .then((r) => r.json())
+            .then((data) => {
+              console.log(data);
+            });
+        });
+    </script>
+  </body>
+</html>

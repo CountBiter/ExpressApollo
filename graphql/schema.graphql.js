@@ -1,8 +1,12 @@
 import { gql } from "apollo-server-express";
 
 export const typeDefs = gql`
+  scalar Upload
+  type File {
+    url: String
+  }
   type Organisations {
-    _id: ID!
+    _id: ID
     title: String
     full_name: String
     icon: String
@@ -110,17 +114,27 @@ export const typeDefs = gql`
     description: String
     files: [KnowledgeBaseFiles]
   }
+  type NewToken {
+    token: String
+    refresh_token: String
+  }
   type Query {
-    getAllOrganisations(page: Int): [Organisations]
+    otherFields: Boolean!
+    getAllOrganisations: [Organisations]
     getAllUsers: [Users]
+    getUserRole(token: String): UserRole
+    getRole(token: String): Roles
     getAllRoles: [Roles]
     getAllContacts: [Contact]
     getContact: Contact
-    getAllTasks: [Tasks]
+    getUser(userId: [String]): Users
+    getTask(taskId: String): Tasks
+    getAllTasks(page: Int): [Tasks]
+    getState(stateId: String): TaskState
     getAllType: [TaskType]
     getAllState: [TaskState]
-    getAllComments: [Comments]
-    getAllKnowledgeBase: [KnowledgeBase]
+    getAllComments(taskId: String): [Comments]
+    getAllKnowledgeBase(page: Int): [KnowledgeBase]
   }
   input inputOrganisation {
     title: String
@@ -177,10 +191,7 @@ export const typeDefs = gql`
   input inputContacts {
     user_id: ID!
   }
-  input inputTask {
-    title: String
-    description: String
-    create_date: String
+  input inputTaskParams {
     task_type_id: String
     acceptence_date: String
     finished_date: String
@@ -193,6 +204,14 @@ export const typeDefs = gql`
     name: String
     create_date: String
     file_url: String
+  }
+  input inputTask {
+    title: String
+    description: String
+    create_date: String
+    priority: String
+    mata_tags: [String]
+    files: [inputTaskFile]
   }
   input inputStateTask {
     title: String
@@ -218,6 +237,7 @@ export const typeDefs = gql`
     description: String
   }
   type Mutation {
+    fileUpload(file: [Upload]!): [File]!
     getOrganisation(orgId: String): Organisations
     addOrganisation(org: inputOrganisation): Organisations
     updateOrganisation(
@@ -225,7 +245,6 @@ export const typeDefs = gql`
       orgId: String
     ): Organisations
     deleteOrganisation(id: String): String
-    getRole(roleId: String): Roles
     addRoles(roles: inputRoles, rolesTasks: inputRoleTaskPermmission): Roles
     updateRoles(
       roleId: String
@@ -233,23 +252,20 @@ export const typeDefs = gql`
       updateDataTask: inputRoleTaskPermmission
     ): Roles
     deleteRoles(roleId: String): String
-    getUser(userId: String): Users
     addUsers(user: inputUsers): Users
     updateUser(userId: String, updateData: inputUsers): Users
     deleteUser(userId: String): String
-    getUserRole(userRoleId: String): UserRole
     addUserRoles(roleId: String, userId: String): UserRole
     updateUserRoles(updateData: inputUpdateRole, oldIdRole: String): Roles
     getUserContact(userId: String): [Contact]
     addContacts(newContact: inputContacts, typeCI: inputTypeCI): Contact
     updateContacts(contactId: String, updateTypeCI: inputTypeCI): Contact
     deleteContasts(contactId: String): String
-    getTask(taskId: String): Tasks
     addTask(taskData: inputTask, token: String): Tasks
+    addParamsToTask(taskId: String, params: inputTaskParams): Tasks
     updateTask(taskId: String, newTaskData: inputTask): Tasks
     deleteTask(taskId: String): String
     addFileToTask(taskId: String, fileData: inputTaskFile, token: String): Tasks
-    getState(stateId: String): TaskState
     addStateToTask(taskId: String, stateData: inputStateTask): Tasks
     addState(stateData: inputStateTask): TaskState
     updateStateToTask(
@@ -266,14 +282,19 @@ export const typeDefs = gql`
       newTypeData: inputTypeTask
     ): Tasks
     getComment(commentId: String): Comments
-    addCommentsToTask(taskId: String, commentsData: inputComments, token: String): Comments
+    addCommentsToTask(commentsData: inputComments, token: String): Comments
     deleteCommentsToTask(commentsId: String): String
     getKnowledgeBase(knowledgeBaseId: String): KnowledgeBase
-    addKnowledgeBase(knowledgeBaseData: inputKnowledgeBase, token: String): KnowledgeBase
+    addKnowledgeBase(
+      knowledgeBaseData: inputKnowledgeBase
+      token: String
+    ): KnowledgeBase
     deleteKnowledgeBase(knowledgeBaseId: String): String
     addFileToKnowledgeBase(
       knowledgeBaseId: String
-      KnowledgeBaseFileData: inputKnowledgeBaseFiles, token: String
+      KnowledgeBaseFileData: inputKnowledgeBaseFiles
+      token: String
     ): KnowledgeBase
+    refreshToken(token: String): NewToken
   }
 `;

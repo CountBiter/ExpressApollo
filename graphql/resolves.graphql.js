@@ -19,9 +19,19 @@ import jwt from "jsonwebtoken";
 
 export const resolvers = {
   Query: {
-    getAllOrganisations: async (_, {page}) => {
+    getAllOrganisations: async () => {
       try {
         return await Organisations.find();
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getUser: async (_, { userId }) => {
+      try {
+        console.log(userId);
+        for (let i = 0; i < userId.length; i++) {
+          return await User.findOne({ _id: ObjectId(userId[i]) });
+        }
       } catch (err) {
         return new Error(err);
       }
@@ -29,6 +39,24 @@ export const resolvers = {
     getAllUsers: async () => {
       try {
         return await User.find();
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getUserRole: async (_, { token }) => {
+      try {
+        console.log(token);
+        const { user_id } = jwt.decode(token, process.env.JWT_SECRET);
+        return await UserRoles.findOne({ user_id: user_id });
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getRole: async (_, { token }) => {
+      try {
+        const { role_id } = jwt.decode(token, process.env.JWT_SECRET);
+        const findRole = await Roles.findOne({ _id: ObjectId(role_id) });
+        return findRole;
       } catch (err) {
         return new Error(err);
       }
@@ -47,9 +75,24 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    getAllTasks: async () => {
+    getTask: async (_, { taskId }) => {
       try {
-        return await Tasks.find();
+        return await Tasks.findOne({ _id: ObjectId(taskId) });
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getAllTasks: async (_, { page }) => {
+      try {
+        let perPage = 20;
+        const allTasks = await Tasks.find();
+        if (allTasks.length + 1 / page >= perPage) {
+          return await Tasks.find()
+            .limit(perPage)
+            .skip(page === 0 ? 0 : page * perPage);
+        } else {
+          return "Not tasks";
+        }
       } catch (err) {
         return new Error(err);
       }
@@ -61,6 +104,13 @@ export const resolvers = {
         return new Error(err);
       }
     },
+    getState: async (_, { stateId }) => {
+      try {
+        return await TaskState.findOne({ _id: ObjectId(stateId) });
+      } catch (err) {
+        return new Error(err);
+      }
+    },
     getAllState: async () => {
       try {
         return await TaskState.find();
@@ -68,16 +118,24 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    getAllComments: async () => {
+    getAllComments: async (_, { taskId }) => {
       try {
-        return await TaskComments.find();
+        return await TaskComments.find({ task_id: ObjectId(taskId) });
       } catch (err) {
         return new Error(err);
       }
     },
-    getAllKnowledgeBase: async () => {
+    getAllKnowledgeBase: async (_, { page }) => {
       try {
-        return await KnowledgeBase.find();
+        let perPage = 20;
+        const allBase = KnowledgeBase.find();
+        if (allBase.length + 1 / page >= perPage) {
+          return await KnowledgeBase.find()
+            .limit(perPage)
+            .skip(page === 0 ? 0 : page * perPage);
+        } else {
+          return "Not knowLedge";
+        }
       } catch (err) {
         return new Error(err);
       }
@@ -126,14 +184,6 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    getRole: async (_, { roleId }) => {
-      try {
-        const findRole = await Roles.findOne({ _id: ObjectId(roleId) });
-        return findRole;
-      } catch (err) {
-        return new Error(err);
-      }
-    },
     addRoles: async (_, { roles, rolesTasks }) => {
       try {
         let newRoles = roles;
@@ -178,13 +228,6 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    getUser: async (_, { userId }) => {
-      try {
-        return await User.findOne({ _id: ObjectId(userId) });
-      } catch (err) {
-        return new Error(err);
-      }
-    },
     addUsers: async (_, { user }) => {
       try {
         let salt = 10;
@@ -220,16 +263,9 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    getUserRole: async (_, { userRoleId }) => {
-      try {
-        return await UserRoles.findOne({ _id: ObjectId(userRoleId) });
-      } catch (err) {
-        return new Error(err);
-      }
-    },
     addUserRoles: async (_, { roleId, userId }) => {
       try {
-        let userRole = { user_id: roleId, role_id: userId };
+        let userRole = { user_id: userId, role_id: roleId };
         const newUserRole = new UserRoles(userRole);
 
         await newUserRole.save();
@@ -244,7 +280,6 @@ export const resolvers = {
         let NewRoles = updateData;
         for (let key in NewRoles) {
           if (NewRoles[key] === null) {
-            console.log(NewRoles[key]);
             NewRoles[key] = false;
           }
         }
@@ -307,38 +342,78 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    getTask: async (_, { taskId }) => {
-      try {
-        return await Tasks.findOne({ _id: ObjectId(taskId) });
-      } catch (err) {
-        return new Error(err);
-      }
-    },
     addTask: async (_, { taskData, token }) => {
       try {
+        console.log(_);
+        console.log(taskData, token);
         const { user_id, role_id } = jwt.decode(token, process.env.JWT_SECRET);
         const userRole = await Roles.findOne({ _id: ObjectId(role_id) });
+        console.log(userRole);
         if (
           (userRole.permmission.files &&
             userRole.permmission.description &&
             userRole.permmission.title &&
-            taskData.implementer_id === null &&
-            taskData.state_id === null &&
-            taskData.priority === null) ||
+            userRole.permmission.priority) ||
           (userRole.permmission.implementer &&
             userRole.permmission.state &&
-            userRole.permmission.priority &&
-            taskData.implementer_id !== null &&
-            taskData.state_id !== null &&
-            taskData.priority !== null)
+            userRole.permmission.priority)
         ) {
+          const padTo2Digits = (num) => {
+            return num.toString().padStart(2, "0");
+          };
           let task = taskData;
+          const date = new Date(Number(task.create_date));
+
+          task.create_date =
+            `${[
+              padTo2Digits(date.getHours()),
+              padTo2Digits(date.getMinutes()),
+            ].join(":")} ` +
+            `${[
+              padTo2Digits(date.getDate()),
+              padTo2Digits(date.getMonth() + 1),
+              date.getFullYear(),
+            ].join("/")}`;
           task.author_id = user_id;
           const newTask = new Tasks(task);
           newTask.save();
 
           return newTask;
         } else throw "This user can't";
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    addParamsToTask: async (_, { taskId, params }) => {
+      try {
+        const {
+          task_type_id,
+          acceptence_date,
+          finished_date,
+          implementer_id,
+          state_id,
+          priority,
+          mata_tags,
+        } = params;
+        await Tasks.updateOne(
+          {
+            _id: ObjectId(taskId),
+          },
+          {
+            $set: {
+              task_type_id: task_type_id,
+              acceptence_date: acceptence_date,
+              finished_date: finished_date,
+              implementer_id: implementer_id,
+              state_id: state_id,
+              priority: priority,
+              mata_tags: mata_tags,
+            },
+          }
+        );
+        const task = await Tasks.findOne({ _id: ObjectId(taskId) });
+
+        return task;
       } catch (err) {
         return new Error(err);
       }
@@ -365,7 +440,7 @@ export const resolvers = {
       try {
         const { user_id } = jwt.decode(token, process.env.JWT_SECRET);
         const taskFile = await Tasks.findOne({ _id: ObjectId(taskId) });
-        let authorFile = fileData
+        let authorFile = fileData;
         authorFile.author_id = user_id;
         let file = [];
 
@@ -386,15 +461,9 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    getState: async (_, { stateId }) => {
-      try {
-        return await TaskState.findOne({ _id: ObjectId(stateId) });
-      } catch (err) {
-        return new Error(err);
-      }
-    },
     addStateToTask: async (_, { taskId, stateData }) => {
       try {
+        console.log(taskId, stateData);
         const state = new TaskState(stateData);
         await state.save();
         console.log(state._id);
@@ -494,7 +563,7 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    addCommentsToTask: async (_, { taskId, commentsData, token }) => {
+    addCommentsToTask: async (_, { commentsData, token }) => {
       try {
         const { user_id } = jwt.decode(token, process.env.JWT_SECRET);
         let comment = commentsData;
@@ -550,12 +619,12 @@ export const resolvers = {
       { knowledgeBaseId, KnowledgeBaseFileData, token }
     ) => {
       try {
-        const { user_id } = jwt.decode(token, process.env.JWT_SECRET)
+        const { user_id } = jwt.decode(token, process.env.JWT_SECRET);
         const baseFile = await KnowledgeBase.findOne({
           _id: ObjectId(knowledgeBaseId),
         });
-        let authorKnowLedge = KnowledgeBaseFileData
-        authorKnowLedge.author_id = user_id
+        let authorKnowLedge = KnowledgeBaseFileData;
+        authorKnowLedge.author_id = user_id;
         let file = [];
 
         baseFile.files.forEach((item) => {
@@ -570,6 +639,17 @@ export const resolvers = {
         );
         const base = await Tasks.findOne({ _id: ObjectId(knowledgeBaseId) });
         return base;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    refreshToken: async (_, { token }) => {
+      try {
+        const { user_id, role_id } = jwt.decode(token, process.env.JWT_SECRET);
+
+        const newtoken = jwt.sign({ role_id, user_id }, process.env.JWT_SECRET);
+
+        return newtoken;
       } catch (err) {
         return new Error(err);
       }
