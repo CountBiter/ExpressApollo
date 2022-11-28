@@ -97,6 +97,13 @@ export const resolvers = {
         return new Error(err);
       }
     },
+    getType: async (_, { typeTitle }) => {
+      try {
+        return await TaskType.findOne({ title: typeTitle });
+      } catch (err) {
+        return new Error(err);
+      }
+    },
     getAllType: async () => {
       try {
         return await TaskType.find();
@@ -350,9 +357,9 @@ export const resolvers = {
         const userRole = await Roles.findOne({ _id: ObjectId(role_id) });
         console.log(userRole);
         if (
-          (userRole.permmission.files &&
-            userRole.permmission.description &&
-            userRole.permmission.title &&
+          (userRole.permmission.files ||
+            userRole.permmission.description ||
+            userRole.permmission.title ||
             userRole.permmission.priority) ||
           (userRole.permmission.implementer &&
             userRole.permmission.state &&
@@ -501,13 +508,6 @@ export const resolvers = {
         const task = await Tasks.findOne({ _id: ObjectId(taskId) });
         console.log(task);
         return task;
-      } catch (err) {
-        return new Error(err);
-      }
-    },
-    getType: async (_, { typeId }) => {
-      try {
-        return await TaskType.findOne({ _id: ObjectId(typeId) });
       } catch (err) {
         return new Error(err);
       }

@@ -14,7 +14,6 @@ export const TaskTypeSchema = new Schema({
 
 export const TaskStateSchema = new Schema({
   title: String,
-  sla: Number,
 });
 
 export const TaskCommentsSchema = new Schema({

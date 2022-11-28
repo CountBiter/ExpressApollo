@@ -85,7 +85,6 @@ export const typeDefs = gql`
   type TaskState {
     _id: ID!
     title: String
-    sla: Int
   }
   type TaskType {
     _id: ID!
@@ -131,6 +130,7 @@ export const typeDefs = gql`
     getTask(taskId: String): Tasks
     getAllTasks(page: Int): [Tasks]
     getState(stateId: String): TaskState
+    getType(typeTitle: String): TaskType
     getAllType: [TaskType]
     getAllState: [TaskState]
     getAllComments(taskId: String): [Comments]
@@ -169,7 +169,7 @@ export const typeDefs = gql`
     full_name: String
     post: String
     depaptament: String
-    organisation_id: ID!
+    organisation_id: String
     login: String
     hashed_password: String
     telegram_chat_id: String
@@ -215,7 +215,6 @@ export const typeDefs = gql`
   }
   input inputStateTask {
     title: String
-    sla: Int
   }
   input inputTypeTask {
     title: String
@@ -273,7 +272,6 @@ export const typeDefs = gql`
       taskId: String
       newStateData: inputStateTask
     ): Tasks
-    getType(typeId: String): TaskType
     addTypeToTask(taskId: String, typeData: inputTypeTask): Tasks
     addType(typeData: inputTypeTask): TaskType
     updateTypeToTask(
