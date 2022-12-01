@@ -14,7 +14,7 @@ import {
   KnowledgeBase,
 } from "../database/dbConnector.js";
 import { ObjectId } from "mongodb";
-import { hashSync, compareSync } from "bcrypt";
+import { hashSync } from "bcrypt";
 import jwt from "jsonwebtoken";
 
 export const resolvers = {
@@ -82,6 +82,25 @@ export const resolvers = {
         return new Error(err);
       }
     },
+    getAllUserTasks: async (_, { token }) => {
+      try {
+        const { user_id } = jwt.decode(token, process.env.JWT_SECRET);
+        const allUserTasks = Tasks.find({ author_id: user_id });
+        return allUserTasks;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
+    getAllUserImplementerTasks: async (_, { token }) => {
+      try {
+        const { user_id } = jwt.decode(token, process.env.JWT_SECRET);
+        const allUserImplementerTasks = Tasks.find({ implementer_id: user_id });
+
+        return allUserImplementerTasks;
+      } catch (err) {
+        return new Error(err);
+      }
+    },
     getAllTasks: async (_, { page }) => {
       try {
         let perPage = 20;
@@ -116,6 +135,14 @@ export const resolvers = {
         return await TaskState.findOne({ _id: ObjectId(stateId) });
       } catch (err) {
         return new Error(err);
+      }
+    },
+    getAllTasksWithStatus: async (_, {statusId}) => {
+      try {
+        const tasks = await Tasks.find({status_id: statusId})
+        return tasks
+      } catch (err) {
+        return new Error(err)
       }
     },
     getAllState: async () => {
@@ -193,6 +220,7 @@ export const resolvers = {
     },
     addRoles: async (_, { roles, rolesTasks }) => {
       try {
+        console.log(rolesTasks)
         let newRoles = roles;
         newRoles.permmission = rolesTasks;
         for (let key in newRoles.permmission) {
@@ -250,11 +278,17 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    updateUser: async (_, { userId, updateData }) => {
+    updateUser: async (_, { token, updateData }) => {
       try {
-        await User.findOneAndUpdate({ _id: ObjectId(userId) }, updateData);
+        console.log(token, updateData)
+        const {user_id} = jwt.decode(token, process.env.JWT_SECRET)
+        let salt = 10;
+        let hashPassword = hashSync(updateData.hashed_password.toString(), salt);
+        let HashUser = updateData;
+        HashUser.hashed_password = hashPassword;
+        await User.findOneAndUpdate({ _id: ObjectId(user_id) }, updateData);
 
-        const updateUser = await User.findOne({ _id: ObjectId(userId) });
+        const updateUser = await User.findOne({ _id: ObjectId(user_id) });
 
         return updateUser;
       } catch (err) {
@@ -272,6 +306,7 @@ export const resolvers = {
     },
     addUserRoles: async (_, { roleId, userId }) => {
       try {
+        console.log(roleId, userId);
         let userRole = { user_id: userId, role_id: roleId };
         const newUserRole = new UserRoles(userRole);
 
@@ -311,12 +346,12 @@ export const resolvers = {
         return new Error(err);
       }
     },
-    addContacts: async (_, { newContact, typeCI }) => {
+    addContacts: async (_, { contact, typeCI }) => {
       try {
-        let contact = newContact;
-        newContact.type_ci = typeCI;
+        const {user_id} = jwt.decode(contact.user_id, process.env.JWT_SECRET);
+        let userContact = {user_id: ObjectId(user_id), value: contact.value, type_ci: typeCI}
 
-        const newContacts = new Contacts(contact);
+        const newContacts = new Contacts(userContact);
         newContacts.save();
 
         return newContacts;
@@ -351,16 +386,13 @@ export const resolvers = {
     },
     addTask: async (_, { taskData, token }) => {
       try {
-        console.log(_);
-        console.log(taskData, token);
         const { user_id, role_id } = jwt.decode(token, process.env.JWT_SECRET);
         const userRole = await Roles.findOne({ _id: ObjectId(role_id) });
-        console.log(userRole);
         if (
-          (userRole.permmission.files ||
-            userRole.permmission.description ||
-            userRole.permmission.title ||
-            userRole.permmission.priority) ||
+          userRole.permmission.files ||
+          userRole.permmission.description ||
+          userRole.permmission.title ||
+          userRole.permmission.priority ||
           (userRole.permmission.implementer &&
             userRole.permmission.state &&
             userRole.permmission.priority)

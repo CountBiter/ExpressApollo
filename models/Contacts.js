@@ -7,5 +7,6 @@ const TypeCISchema = new Schema({
 
 export const ContactsSchema = new Schema({
     user_id: {type: Schema.Types.ObjectId, ref: "Users"},
-    type_ci: TypeCISchema
+    type_ci: TypeCISchema,
+    value: String
 })

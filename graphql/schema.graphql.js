@@ -1,10 +1,6 @@
 import { gql } from "apollo-server-express";
 
 export const typeDefs = gql`
-  scalar Upload
-  type File {
-    url: String
-  }
   type Organisations {
     _id: ID
     title: String
@@ -127,10 +123,13 @@ export const typeDefs = gql`
     getAllContacts: [Contact]
     getContact: Contact
     getUser(userId: [String]): Users
+    getAllUserTasks(token: String): [Tasks]
+    getAllUserImplementerTasks(token: String): [Tasks]
     getTask(taskId: String): Tasks
     getAllTasks(page: Int): [Tasks]
     getState(stateId: String): TaskState
     getType(typeTitle: String): TaskType
+    getAllTasksWithStatus(statusId: String): [Tasks]
     getAllType: [TaskType]
     getAllState: [TaskState]
     getAllComments(taskId: String): [Comments]
@@ -174,6 +173,13 @@ export const typeDefs = gql`
     hashed_password: String
     telegram_chat_id: String
   }
+  input inputUpdateUsers {
+    first_name: String
+    last_name: String
+    middle_name: String
+    full_name: String
+    hashed_password: String
+  }
   input inputUpdateRole {
     title: Boolean
     description: Boolean
@@ -190,6 +196,7 @@ export const typeDefs = gql`
   }
   input inputContacts {
     user_id: ID!
+    value: String
   }
   input inputTaskParams {
     task_type_id: String
@@ -236,7 +243,6 @@ export const typeDefs = gql`
     description: String
   }
   type Mutation {
-    fileUpload(file: [Upload]!): [File]!
     getOrganisation(orgId: String): Organisations
     addOrganisation(org: inputOrganisation): Organisations
     updateOrganisation(
@@ -252,12 +258,12 @@ export const typeDefs = gql`
     ): Roles
     deleteRoles(roleId: String): String
     addUsers(user: inputUsers): Users
-    updateUser(userId: String, updateData: inputUsers): Users
+    updateUser(token: String, updateData: inputUpdateUsers): Users
     deleteUser(userId: String): String
     addUserRoles(roleId: String, userId: String): UserRole
     updateUserRoles(updateData: inputUpdateRole, oldIdRole: String): Roles
     getUserContact(userId: String): [Contact]
-    addContacts(newContact: inputContacts, typeCI: inputTypeCI): Contact
+    addContacts(contact: inputContacts, typeCI: inputTypeCI): Contact
     updateContacts(contactId: String, updateTypeCI: inputTypeCI): Contact
     deleteContasts(contactId: String): String
     addTask(taskData: inputTask, token: String): Tasks
